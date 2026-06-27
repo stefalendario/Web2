@@ -2,7 +2,7 @@
  * firebase-messaging-sw.js  — Stefalendario Web Push
  *
  * Deve essere servito dalla ROOT del sito (stesso origin di index.html).
- * Per GitHub Pages: stefalendario.github.io/web/firebase-messaging-sw.js
+ * Per GitHub Pages: stefalendario.github.io/Web2/firebase-messaging-sw.js
  *
  * IMPORTANTE: questo file usa importScripts (non ES modules) perché i
  * Service Worker non supportano ancora "import" nativo in tutti i browser.
@@ -68,8 +68,8 @@ messaging.onBackgroundMessage(function(payload) {
 
   return self.registration.showNotification(title, {
     body,
-    icon:  '/web/icon-192.png',   // usa il tuo icon già presente, o aggiungilo
-    badge: '/web/icon-96.png',
+    icon:  '/Web2/icon-192.png',   // usa il tuo icon già presente, o aggiungilo
+    badge: '/Web2/icon-96.png',
     tag:   `stefalendario-${type}-${id}`,   // evita notifiche duplicate
     renotify: false,
     data: notificationData
@@ -90,15 +90,15 @@ self.addEventListener('notificationclick', function(event) {
   if (type === 'event') {
     // Warm start: apre direttamente il dettaglio evento
     // (la pagina web gestirà il parametro notifEventId)
-    const base = self.location.origin + '/web/';
+    const base = self.location.origin + '/Web2/';
     targetUrl = eventDate
       ? `${base}?notif_type=event&notif_id=${encodeURIComponent(id)}&notif_date=${encodeURIComponent(eventDate)}`
       : `${base}?notif_type=event&notif_id=${encodeURIComponent(id)}`;
   } else if (type === 'program') {
-    const base = self.location.origin + '/web/';
+    const base = self.location.origin + '/Web2/';
     targetUrl = `${base}?notif_type=program&notif_id=${encodeURIComponent(id)}`;
   } else {
-    targetUrl = self.location.origin + '/web/';
+    targetUrl = self.location.origin + '/Web2/';
   }
 
   event.waitUntil(

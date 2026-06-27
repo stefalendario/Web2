@@ -686,7 +686,7 @@ function notifSupported(){
 async function registerSW(){
   if(!('serviceWorker'in navigator))return null;
   try{
-    const reg=await navigator.serviceWorker.register('/web/firebase-messaging-sw.js',{scope:'/web/'});
+    const reg=await navigator.serviceWorker.register('/Web2/firebase-messaging-sw.js',{scope:'/Web2/'});
     console.log('[SW] Registrato:',reg.scope);
     return reg;
   }catch(e){console.error('[SW] Errore registrazione:',e);return null;}
