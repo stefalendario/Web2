@@ -1431,11 +1431,13 @@ window.saveEventForm=async function(){
   try{
     if(editingEventId){
       const ex=allEvents.find(e=>e.id===editingEventId);
-      await setDoc(doc(db,'events',editingEventId),{...ex,...data});
+      // updateDoc invece di setDoc: preserva createdAt e id originali senza sovrascriverli
+      await updateDoc(doc(db,'events',editingEventId),{...data,insertedBy:ex?.insertedBy||'',insertedByUid:ex?.insertedByUid||''});
       showToast('Evento aggiornato');
     }else{
       const name=currentUser?.displayName||currentUser?.email||'Utente';
-      await addDoc(collection(db,'events'),{...data,insertedBy:name,insertedByUid:currentUser.uid});
+      // id:'' allineato ad Android (data class default), createdAt come timestamp ms
+      await addDoc(collection(db,'events'),{...data,insertedBy:name,insertedByUid:currentUser.uid,id:'',createdAt:Date.now()});
       showToast('Evento aggiunto');
     }
     historyBack();
