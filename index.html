@@ -990,7 +990,7 @@ onAuthStateChanged(auth,async user=>{
 function startListeners(){
   stopListeners();
   unsubEvents=onSnapshot(query(collection(db,'events'),orderBy('date','asc')),snap=>{
-    allEvents=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.date===b.date?(a.time||'').localeCompare(b.time||''):a.date.localeCompare(b.date));
+    allEvents=snap.docs.map(d=>({...d.data(),id:d.id})).sort((a,b)=>a.date===b.date?(a.time||'').localeCompare(b.time||''):a.date.localeCompare(b.date));
     renderCalendar();renderEventList();renderFilters();
     // Naviga alla destinazione pendente (cold start da notifica) appena gli eventi sono caricati
     if(window._pendingNotif){
