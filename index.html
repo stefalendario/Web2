@@ -421,6 +421,30 @@ body.dark .type-option.selected{background:rgba(124,58,237,.2)}
 
 /* ── Programs view ── */
 .programs-list{flex:1;overflow-y:auto;padding:8px 12px calc(var(--bb-h,120px) + 8px);-webkit-overflow-scrolling:touch;min-height:0}
+/* ── Programs search bar ── */
+#programs-search-bar{
+  padding:6px 12px 4px;background:var(--bg-card);
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.programs-search-inner{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg-deep);border:1.5px solid var(--border);border-radius:10px;
+  padding:7px 10px;transition:border-color .15s;
+}
+.programs-search-inner:focus-within{border-color:var(--primary);}
+.programs-search-icon{font-size:14px;flex-shrink:0;opacity:.6}
+#programs-search-input{
+  flex:1;background:transparent;border:none;outline:none;
+  font-size:13px;color:var(--text-main);min-width:0;
+}
+#programs-search-input::placeholder{color:var(--text-muted)}
+/* rimuovi la X nativa del tipo search su webkit */
+#programs-search-input::-webkit-search-cancel-button{display:none}
+.programs-search-clear{
+  background:none;border:none;color:var(--text-muted);
+  font-size:13px;padding:2px 4px;cursor:pointer;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;line-height:1;
+}
 .program-card{
   display:flex;align-items:center;gap:0;
   background:var(--bg-card);border-radius:var(--radius);
@@ -535,6 +559,17 @@ body.dark .type-option.selected{background:rgba(124,58,237,.2)}
   </div>
   <!-- Event list (hidden in programs view) -->
   <div class="event-list" id="event-list"></div>
+  <!-- Search bar (visible only in programs view) -->
+  <div id="programs-search-bar" style="display:none">
+    <div class="programs-search-inner">
+      <span class="programs-search-icon">🔍</span>
+      <input id="programs-search-input" type="search" placeholder="Ricerca programma"
+        autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="onProgramSearch(this.value)"
+        onsearch="onProgramSearch(this.value)"/>
+      <button id="programs-search-clear" class="programs-search-clear" onclick="clearProgramSearch()" style="display:none">✕</button>
+    </div>
+  </div>
   <!-- Programs list (visible only in programs view) -->
   <div class="programs-list" id="programs-list" style="display:none"></div>
   <!-- Bottom bar: tab switcher e filtri -->
@@ -651,6 +686,7 @@ let navHistory=[],unsubEvents=null,unsubCats=null,unsubUsers=null,unsubPrograms=
 let editingEventId=null,editingProgramId=null,isDark=false;
 // double-tap tracking per view tab
 let lastTabTap={month:0,week:0,day:0,programmi:0};
+let programSearchQuery='';
 
 // ── Helpers ──
 const p2=n=>String(n).padStart(2,'0');
@@ -1246,17 +1282,27 @@ window.setView=function(v,btn){
   if(v==='programmi'||prevView==='programmi'){
     activeFilters.clear();
   }
+  // Reset ricerca testuale quando si esce dalla tab programmi
+  if(prevView==='programmi'&&v!=='programmi'){
+    programSearchQuery='';
+    const inp=document.getElementById('programs-search-input');
+    const clr=document.getElementById('programs-search-clear');
+    if(inp)inp.value='';
+    if(clr)clr.style.display='none';
+  }
 
   // Toggle visibility of calendar vs programs UI
   const calWrapper=document.getElementById('cal-wrapper');
   const calNav=document.getElementById('cal-nav');
   const eventList=document.getElementById('event-list');
   const programsList=document.getElementById('programs-list');
+  const searchBar=document.getElementById('programs-search-bar');
   const isPrograms=(v==='programmi');
   if(calWrapper)calWrapper.style.display=isPrograms?'none':'';
   if(calNav)calNav.style.display=isPrograms?'none':'';
   if(eventList)eventList.style.display=isPrograms?'none':'';
   if(programsList)programsList.style.display=isPrograms?'':'none';
+  if(searchBar)searchBar.style.display=isPrograms?'':'none';
   // Oggi button hidden in programs view
   const btnToday=document.getElementById('btn-go-today');
   if(btnToday)btnToday.style.visibility=isPrograms?'hidden':'visible';
@@ -1554,11 +1600,35 @@ function formatRelative(ms){
   return new Date(ms).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'2-digit'});
 }
 
+// ── Program Search ──
+window.onProgramSearch=function(val){
+  programSearchQuery=val||'';
+  const clr=document.getElementById('programs-search-clear');
+  if(clr)clr.style.display=programSearchQuery?'block':'none';
+  renderPrograms();
+};
+window.clearProgramSearch=function(){
+  programSearchQuery='';
+  const inp=document.getElementById('programs-search-input');
+  const clr=document.getElementById('programs-search-clear');
+  if(inp){inp.value='';inp.focus();}
+  if(clr)clr.style.display='none';
+  renderPrograms();
+};
+
 function renderPrograms(){
   const el=document.getElementById('programs-list');if(!el)return;
-  const progs=filteredPrograms();
+  // Applica prima i filtri categoria, poi la ricerca testuale (come Android)
+  let progs=filteredPrograms();
+  if(programSearchQuery.trim()){
+    const q=programSearchQuery.trim().toLowerCase();
+    progs=progs.filter(p=>(p.title||'').toLowerCase().includes(q));
+  }
   if(progs.length===0){
-    el.innerHTML=`<div class="empty-state"><div class="empty-state-icon">📂</div><div style="font-size:15px;font-weight:600;color:var(--text-sub)">Nessun programma</div><div style="font-size:13px;color:var(--text-empty)">Premi + per aggiungerne uno</div></div>`;
+    const isSearch=programSearchQuery.trim().length>0;
+    el.innerHTML=`<div class="empty-state"><div class="empty-state-icon">${isSearch?'🔍':'📂'}</div>`
+      +`<div style="font-size:15px;font-weight:600;color:var(--text-sub)">${isSearch?'Nessun risultato':'Nessun programma'}</div>`
+      +`<div style="font-size:13px;color:var(--text-empty)">${isSearch?"Prova con un'altra parola":'Premi + per aggiungerne uno'}</div></div>`;
     return;
   }
   el.innerHTML=progs.map(p=>{
