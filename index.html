@@ -96,6 +96,8 @@ body.dark{
 .filters{
   display:flex;flex-wrap:wrap;gap:5px;padding:7px 12px 5px;
   border-bottom:1px solid var(--border);
+  /* max 2 righe: chip alto ~26px + gap 5px → 2×26+5 = 57px + padding */
+  max-height:64px;overflow:hidden;align-content:flex-start;
 }
 .chip{
   padding:4px 11px;border-radius:20px;
@@ -1070,7 +1072,6 @@ function renderFilters(){
   const partecipo=document.getElementById('chip-partecipo');
   const clearChip=document.getElementById('chip-clear');
   const isProgramsView=(calView==='programmi');
-  // Disable "Partecipo" chip in programs view
   if(partecipo){
     partecipo.classList.toggle('disabled',isProgramsView);
     partecipo.classList.toggle('active',!isProgramsView&&activeFilters.has('__partecipo__'));
@@ -1080,10 +1081,42 @@ function renderFilters(){
   Object.entries(allCategories).forEach(([key,cat])=>{
     const chip=document.createElement('div');
     chip.className='chip'+(activeFilters.has(key)?' active':'');
-    chip.dataset.filter=key;chip.textContent=`${cat.emoji} ${cat.label}`;
+    chip.dataset.filter=key;
+    chip.dataset.emoji=cat.emoji;
+    chip.dataset.label=cat.label;
+    chip.title=cat.label;
+    chip.textContent=`${cat.emoji} ${cat.label}`;
     chip.onclick=()=>toggleFilter(chip);bar.insertBefore(chip,clearChip);
   });
   if(clearChip)clearChip.classList.toggle('visible',activeFilters.size>0);
+  // Adatta i label per stare in max 2 righe
+  requestAnimationFrame(()=>fitChipsTo2Rows(bar));
+}
+
+function fitChipsTo2Rows(bar){
+  // Altezza di una riga = altezza del primo chip + gap
+  const chips=Array.from(bar.querySelectorAll('.chip[data-label]'));
+  if(!chips.length)return;
+  const chipH=chips[0].offsetHeight;
+  const gap=5;
+  const maxH=chipH*2+gap; // esattamente 2 righe
+
+  // Se già ci stanno, ripristina i label completi e esci
+  chips.forEach(c=>{ c.textContent=`${c.dataset.emoji} ${c.dataset.label}`; });
+  if(bar.scrollHeight<=maxH+2)return;
+
+  // Prova 1: emoji + label troncato a N caratteri (decrescente)
+  for(let maxChars=8;maxChars>=3;maxChars--){
+    chips.forEach(c=>{
+      const lbl=c.dataset.label;
+      const short=lbl.length>maxChars?lbl.slice(0,maxChars-1)+'…':lbl;
+      c.textContent=`${c.dataset.emoji} ${short}`;
+    });
+    if(bar.scrollHeight<=maxH+2)return;
+  }
+
+  // Prova 2: solo emoji
+  chips.forEach(c=>{ c.textContent=c.dataset.emoji; });
 }
 window.toggleFilter=function(el){
   const key=el.dataset.filter;
