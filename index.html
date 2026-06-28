@@ -1093,46 +1093,46 @@ function renderFilters(){
 }
 
 function fitChipsTo2Rows(bar){
-  const chips=Array.from(bar.querySelectorAll('.chip[data-label]'));
-  if(!chips.length)return;
+  // Chip con data-label = categorie (abbreviabili)
+  const catChips=Array.from(bar.querySelectorAll('.chip[data-label]'));
+  if(!catChips.length)return;
 
-  // Durante tutta la misurazione togliamo i vincoli di altezza
   bar.style.overflow='visible';
   bar.style.maxHeight='none';
 
-  // Conta le righe distinte guardando il offsetTop di ogni chip
-  // (relativo al container, stabile e disponibile subito dopo il layout)
+  // Conta righe guardando offsetTop di TUTTI i figli visibili (Partecipo + categorie + Tutti ×)
   const countRows=()=>{
-    const tops=new Set(chips.map(c=>c.offsetTop));
+    const allVisible=Array.from(bar.children).filter(c=>c.offsetWidth>0);
+    const tops=new Set(allVisible.map(c=>c.offsetTop));
     return tops.size;
   };
 
-  // Step 1: prova con label completo
-  chips.forEach(c=>{ c.textContent=`${c.dataset.emoji} ${c.dataset.label}`; });
-  if(countRows()<=2){ applyMaxHeight(bar,chips); return; }
+  // Step 1: label completo
+  catChips.forEach(c=>{ c.textContent=`${c.dataset.emoji} ${c.dataset.label}`; });
+  if(countRows()<=2){ applyMaxHeight(bar); return; }
 
   // Step 2: accorcia progressivamente da 8 a 3 caratteri
   for(let n=8;n>=3;n--){
-    chips.forEach(c=>{
+    catChips.forEach(c=>{
       const l=c.dataset.label;
       c.textContent=`${c.dataset.emoji} ${l.length>n?l.slice(0,n-1)+'…':l}`;
     });
-    if(countRows()<=2){ applyMaxHeight(bar,chips); return; }
+    if(countRows()<=2){ applyMaxHeight(bar); return; }
   }
 
   // Step 3: solo emoji
-  chips.forEach(c=>{ c.textContent=c.dataset.emoji; });
-  applyMaxHeight(bar,chips);
+  catChips.forEach(c=>{ c.textContent=c.dataset.emoji; });
+  applyMaxHeight(bar);
 }
 
-function applyMaxHeight(bar,chips){
-  // Trova l'offsetTop più grande tra le prime 2 righe e calcola l'altezza necessaria
-  const tops=[...new Set(chips.map(c=>c.offsetTop))].sort((a,b)=>a-b);
+function applyMaxHeight(bar){
+  // Misura l'altezza reale occupata dalle prime 2 righe di tutti i figli visibili
+  const allVisible=Array.from(bar.children).filter(c=>c.offsetWidth>0);
+  const tops=[...new Set(allVisible.map(c=>c.offsetTop))].sort((a,b)=>a-b);
   const row2Top=tops[1]??tops[0];
-  const chipH=chips[0].offsetHeight;
+  const chipH=allVisible[0].offsetHeight;
   const paddingBottom=5;
-  const h=row2Top+chipH+paddingBottom;
-  bar.style.maxHeight=`${h}px`;
+  bar.style.maxHeight=`${row2Top+chipH+paddingBottom}px`;
   bar.style.overflow='hidden';
 }
 window.toggleFilter=function(el){
@@ -1141,6 +1141,9 @@ window.toggleFilter=function(el){
   el.classList.toggle('active',activeFilters.has(key));
   const clearChip=document.getElementById('chip-clear');
   if(clearChip)clearChip.classList.toggle('visible',activeFilters.size>0);
+  // Ricalcola fit perché "Tutti ×" è ora visibile e occupa spazio
+  const bar=document.getElementById('filters-bar');
+  if(bar)requestAnimationFrame(()=>requestAnimationFrame(()=>fitChipsTo2Rows(bar)));
   if(calView==='programmi'){renderPrograms();}
   else{renderCalendar(0);renderEventList();}
 };
@@ -1149,6 +1152,9 @@ window.clearAllFilters=function(){
   document.querySelectorAll('#filters-bar .chip').forEach(c=>c.classList.remove('active'));
   const clearChip=document.getElementById('chip-clear');
   if(clearChip)clearChip.classList.remove('visible');
+  // Ricalcola fit perché "Tutti ×" è ora nascosto
+  const bar=document.getElementById('filters-bar');
+  if(bar)requestAnimationFrame(()=>requestAnimationFrame(()=>fitChipsTo2Rows(bar)));
   if(calView==='programmi'){renderPrograms();}
   else{renderCalendar(0);renderEventList();}
 };
