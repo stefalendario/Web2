@@ -1088,64 +1088,52 @@ function renderFilters(){
     chip.onclick=()=>toggleFilter(chip);bar.insertBefore(chip,clearChip);
   });
   if(clearChip)clearChip.classList.toggle('visible',activeFilters.size>0);
-  // Adatta i label per stare in max 2 righe
-  requestAnimationFrame(()=>fitChipsTo2Rows(bar));
+  // Doppio rAF: il primo attende il paint, il secondo garantisce che il layout sia stabile
+  requestAnimationFrame(()=>requestAnimationFrame(()=>fitChipsTo2Rows(bar)));
 }
 
 function fitChipsTo2Rows(bar){
   const chips=Array.from(bar.querySelectorAll('.chip[data-label]'));
   if(!chips.length)return;
 
-  // Misura quante righe occupa il layout corrente confrontando la posizione
-  // top del primo chip con quella degli altri. Ogni cambio di top = nuova riga.
-  // Lavoriamo senza overflow:hidden durante la misura, poi lo rimettiamo.
+  // Durante tutta la misurazione togliamo i vincoli di altezza
   bar.style.overflow='visible';
   bar.style.maxHeight='none';
 
-  const measure=()=>{
-    const tops=chips.map(c=>c.getBoundingClientRect().top);
-    const uniqueRows=new Set(tops.map(t=>Math.round(t))).size;
-    return uniqueRows;
+  // Conta le righe distinte guardando il offsetTop di ogni chip
+  // (relativo al container, stabile e disponibile subito dopo il layout)
+  const countRows=()=>{
+    const tops=new Set(chips.map(c=>c.offsetTop));
+    return tops.size;
   };
 
-  // Ripristina label completo prima di misurare
+  // Step 1: prova con label completo
   chips.forEach(c=>{ c.textContent=`${c.dataset.emoji} ${c.dataset.label}`; });
+  if(countRows()<=2){ applyMaxHeight(bar,chips); return; }
 
-  if(measure()<=2){
-    applyMaxHeight(bar,chips);
-    return;
-  }
-
-  // Prova accorciamento progressivo: da 8 caratteri fino a 3
-  for(let maxChars=8;maxChars>=3;maxChars--){
+  // Step 2: accorcia progressivamente da 8 a 3 caratteri
+  for(let n=8;n>=3;n--){
     chips.forEach(c=>{
-      const lbl=c.dataset.label;
-      c.textContent=`${c.dataset.emoji} ${lbl.length>maxChars?lbl.slice(0,maxChars-1)+'…':lbl}`;
+      const l=c.dataset.label;
+      c.textContent=`${c.dataset.emoji} ${l.length>n?l.slice(0,n-1)+'…':l}`;
     });
-    if(measure()<=2){
-      applyMaxHeight(bar,chips);
-      return;
-    }
+    if(countRows()<=2){ applyMaxHeight(bar,chips); return; }
   }
 
-  // Ultima risorsa: solo emoji
+  // Step 3: solo emoji
   chips.forEach(c=>{ c.textContent=c.dataset.emoji; });
   applyMaxHeight(bar,chips);
 }
 
 function applyMaxHeight(bar,chips){
-  // Calcola l'altezza effettiva delle prime 2 righe e la imposta come max-height
-  const barTop=bar.getBoundingClientRect().top;
-  const paddingTop=7; // corrisponde al padding-top del .filters
-  let row=0;let prevTop=null;let maxH=0;
-  for(const c of chips){
-    const ct=Math.round(c.getBoundingClientRect().top);
-    if(prevTop===null||ct>prevTop+2){row++;prevTop=ct;}
-    if(row>2)break;
-    maxH=Math.round(ct-barTop)+c.offsetHeight+paddingTop;
-  }
+  // Trova l'offsetTop più grande tra le prime 2 righe e calcola l'altezza necessaria
+  const tops=[...new Set(chips.map(c=>c.offsetTop))].sort((a,b)=>a-b);
+  const row2Top=tops[1]??tops[0];
+  const chipH=chips[0].offsetHeight;
+  const paddingBottom=5;
+  const h=row2Top+chipH+paddingBottom;
+  bar.style.maxHeight=`${h}px`;
   bar.style.overflow='hidden';
-  bar.style.maxHeight=maxH?`${maxH}px`:'';
 }
 window.toggleFilter=function(el){
   const key=el.dataset.filter;
