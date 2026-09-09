@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="Stefalendario"/>
 <meta name="theme-color" content="#7C3AED"/>
-<link rel="manifest" href="/web/manifest.json"/>
-<link rel="apple-touch-icon" href="/web/icon-192.png"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./icon-192.png"/>
 <title>Stefalendario</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -135,6 +135,30 @@ body.dark .chip-clear{color:var(--cinema);background:rgba(255,107,107,.16);}
 }
 body.dark .view-tab.active::before{background:rgba(124,58,237,.25)}
 .view-tab.active .tab-icon{transform:scale(1.12)}
+
+/* Bottone circolare "Adesso" (eventi rapidi) tra Settimana e Giorno */
+.qe-tab-wrap{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;padding:0 3px}
+.qe-fab{
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  background:linear-gradient(135deg,#7C3AED,#A78BFA);color:#fff;
+  box-shadow:0 2px 8px rgba(124,58,237,.35);
+  transition:transform .15s,box-shadow .15s;
+  margin-top:-2px;
+}
+.qe-fab:active{transform:scale(.92)}
+.qe-fab .tab-label{display:none}
+.qe-tab-wrap .tab-label{font-size:9.5px;font-weight:700;color:var(--text-muted);margin-top:2px;letter-spacing:.02em}
+.qe-tab-wrap.has-events .tab-label{color:var(--primary)}
+.qe-fab.has-events{
+  background:linear-gradient(135deg,#F59E0B,#FBBF24);
+  box-shadow:0 2px 14px rgba(245,158,11,.55);
+  animation:qePulse 1.4s ease-in-out infinite;
+}
+@keyframes qePulse{
+  0%,100%{transform:scale(1);box-shadow:0 2px 14px rgba(245,158,11,.55)}
+  50%{transform:scale(1.1);box-shadow:0 2px 20px rgba(245,158,11,.85)}
+}
 
 /* ── Month grid ── */
 .cal-header{display:grid;grid-template-columns:repeat(7,1fr);padding:2px 8px 0}
@@ -332,6 +356,93 @@ body.dark .btn-danger{color:var(--cinema)}
 .type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
 .type-option{padding:10px;border-radius:11px;border:1.5px solid var(--border);background:var(--bg-field);cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text-sub)}
 .type-option.selected{border-width:2px;background:rgba(124,58,237,.08)}
+
+/* Chip multi-select (tipologie evento rapido: più di una selezionabile) */
+.type-chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.type-chip{
+  padding:6px 11px;border-radius:20px;border:1.5px solid var(--border);
+  background:var(--bg-field);color:var(--text-sub);font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.type-chip.selected{border-width:1.5px;filter:none}
+
+/* Campo luogo con autocomplete Nominatim + pulsante mappa */
+.place-field-wrap{position:relative}
+.geo-suggest-list{
+  position:relative;background:var(--bg-card);border:1.5px solid var(--border);
+  border-top:none;border-radius:0 0 11px 11px;overflow:hidden;
+}
+.geo-suggest-item{
+  padding:10px 14px;font-size:13px;color:var(--text-main);cursor:pointer;
+  display:flex;align-items:center;gap:8px;border-top:1px solid var(--border);
+}
+.geo-suggest-item:first-child{border-top:none}
+.geo-suggest-item:active{background:var(--bg-field)}
+.place-map-btn{
+  display:inline-flex;align-items:center;gap:5px;margin-top:7px;
+  background:none;border:none;color:var(--primary);font-size:12px;font-weight:700;
+  cursor:pointer;padding:4px 2px;
+}
+
+/* Map picker overlay: pin fisso al centro, la mappa scorre sotto (come Android) */
+.map-picker-overlay{
+  position:fixed;inset:0;background:var(--bg-deep);z-index:400;
+  display:none;flex-direction:column;
+}
+.map-picker-overlay.active{display:flex}
+.map-picker-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:var(--bg-card);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.map-picker-title{font-size:14px;font-weight:700;color:var(--text-main)}
+#map-picker-map{flex:1;position:relative;background:#e5e0f7}
+.map-picker-pin{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);
+  font-size:38px;pointer-events:none;z-index:1200;
+  filter:drop-shadow(0 3px 4px rgba(0,0,0,.35));
+}
+.map-picker-locate-btn{
+  position:absolute;right:14px;bottom:14px;width:44px;height:44px;border-radius:50%;
+  background:var(--bg-card);border:1.5px solid var(--border);box-shadow:0 2px 10px rgba(0,0,0,.2);
+  display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;z-index:1200;
+}
+.map-picker-locating{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  background:var(--bg-card);border-radius:20px;padding:7px 14px;font-size:12px;
+  color:var(--text-main);z-index:1200;box-shadow:0 2px 8px rgba(0,0,0,.18);
+}
+.map-picker-bottom{
+  flex-shrink:0;background:var(--bg-card);border-top:1px solid var(--border);
+  padding:12px 14px calc(env(safe-area-inset-bottom,0px) + 12px);
+}
+.map-picker-address{font-size:12px;color:var(--text-sub);margin-bottom:9px;text-align:center;min-height:16px}
+
+/* Card evento rapido */
+.qe-card{
+  background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;
+  padding:11px 12px;margin-bottom:8px;
+}
+.qe-card.expired{opacity:.6}
+.qe-row1{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.qe-title{font-size:14px;font-weight:700;color:var(--text-main);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qe-time{font-size:11px;font-weight:700;color:var(--primary);white-space:nowrap}
+.qe-time.expired{color:var(--text-muted)}
+.qe-owner-actions{display:flex;gap:2px;margin-left:4px}
+.qe-owner-actions .icon-btn-sm{width:24px;height:24px;border:none;background:transparent;color:var(--text-muted);font-size:13px;cursor:pointer;border-radius:6px}
+.qe-row2{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-sub);margin-top:4px;flex-wrap:wrap}
+.qe-badge{padding:2px 7px;border-radius:6px;font-size:10px;font-weight:700}
+.qe-expired-tag{margin-left:auto;font-size:10px;font-style:italic;color:var(--text-muted)}
+.qe-types{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.qe-row3{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px}
+.qe-participants{font-size:10px;color:var(--text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qe-join-btn{
+  flex-shrink:0;border:none;background:none;font-size:10px;font-weight:700;
+  color:var(--primary);cursor:pointer;padding:4px 6px;display:flex;align-items:center;gap:3px;
+}
+.qe-join-btn.joined{color:var(--text-muted)}
+.qe-empty{text-align:center;padding:50px 20px;color:var(--text-muted)}
+.qe-empty .qe-empty-icon{font-size:36px;margin-bottom:8px}
 body.dark .type-option.selected{background:rgba(124,58,237,.2)}
 .attendee-list{display:flex;flex-direction:column;gap:5px}
 .attendee-row{display:flex;align-items:center;gap:9px;padding:9px 12px;background:var(--bg-field);border-radius:9px;cursor:pointer;transition:background .15s}
@@ -491,6 +602,8 @@ body.dark .type-option.selected{background:rgba(124,58,237,.2)}
 /* Chip disabled (partecipo in programmi view) */
 .chip.disabled{opacity:.35;cursor:default;pointer-events:none}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 </head>
 <body>
 <div id="app">
@@ -586,6 +699,10 @@ body.dark .type-option.selected{background:rgba(124,58,237,.2)}
       <button class="view-tab" data-view="week" onclick="setView('week',this)">
         <span class="tab-icon">📋</span><span class="tab-label">Settimana</span>
       </button>
+      <div class="qe-tab-wrap" id="qe-tab-wrap">
+        <button class="qe-fab" id="qe-fab-btn" onclick="openQuickEvents()" title="Eventi rapidi">⚡</button>
+        <span class="tab-label">Adesso</span>
+      </div>
       <button class="view-tab" data-view="day" onclick="setView('day',this)">
         <span class="tab-icon">☀️</span><span class="tab-label">Giorno</span>
       </button>
@@ -636,6 +753,42 @@ body.dark .type-option.selected{background:rgba(124,58,237,.2)}
   <div class="form-scroll" id="pf-body"></div>
 </div>
 
+<!-- Quick Events list ("Adesso ⚡") -->
+<div id="screen-quick-events" class="screen">
+  <div class="topbar">
+    <button class="icon-btn back-btn" onclick="historyBack()">←</button>
+    <div class="topbar-title">⚡ Adesso</div>
+    <button class="icon-btn" onclick="openQuickEventForm()" style="background:var(--primary);color:#fff;font-size:22px;font-weight:700">+</button>
+  </div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px 20px" id="qe-list-body"></div>
+</div>
+
+<!-- Quick Event Form -->
+<div id="screen-quick-event-form" class="screen">
+  <div class="topbar">
+    <button class="icon-btn back-btn" onclick="historyBack()">←</button>
+    <div class="topbar-title" id="qef-title">Nuovo evento rapido</div>
+    <button class="icon-btn" onclick="saveQuickEventForm()" style="background:var(--primary);color:#fff">✓</button>
+  </div>
+  <div class="form-scroll" id="qef-body"></div>
+</div>
+
+</div>
+
+<!-- Map picker overlay (selezione punto su mappa, usato dai form Evento e Evento rapido) -->
+<div id="map-picker-overlay" class="map-picker-overlay">
+  <div class="map-picker-top">
+    <button class="icon-btn" onclick="closeMapPicker()">✕</button>
+    <div class="map-picker-title">Scegli il luogo</div>
+    <div style="width:38px"></div>
+  </div>
+  <div id="map-picker-map">
+    <div class="map-picker-locate-btn" onclick="locateMapPicker(false)" title="La mia posizione">🎯</div>
+  </div>
+  <div class="map-picker-bottom">
+    <div id="map-picker-address" class="map-picker-address">Trascina la mappa per posizionare il segnaposto</div>
+    <button class="btn-primary" style="width:100%" onclick="confirmMapPicker()">Conferma questo luogo</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -683,8 +836,13 @@ let allCategories={cinema:{label:"Cinema",emoji:"🎬",colorHex:"#FF6B6B"},music
 let activeFilters=new Set();
 let calView="month",calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
 let selDate=null,weekStart=null;
-let navHistory=[],unsubEvents=null,unsubCats=null,unsubUsers=null,unsubPrograms=null;
-let editingEventId=null,editingProgramId=null,isDark=false;
+let navHistory=[],unsubEvents=null,unsubCats=null,unsubUsers=null,unsubPrograms=null,unsubQuickEvents=null;
+let editingEventId=null,editingProgramId=null,editingQuickEventId=null,isDark=false;
+let allQuickEvents=[];
+let qeTickInterval=null;
+// Map picker: stato condiviso, apribile dal form Evento o Evento rapido
+let mapPickerLeaflet=null,mapPickerTargetInputId=null,mapPickerCenter=null,mapPickerResolveTimer=null;
+const DEFAULT_MAP_CENTER=[41.9028,12.4964]; // Roma, come su Android
 // double-tap tracking per view tab
 let lastTabTap={month:0,week:0,day:0,programmi:0};
 let programSearchQuery='';
@@ -702,6 +860,152 @@ function catLabel(k){return allCategories[k]?.label||k}
 function getWeekMonday(d){const dt=new Date(d);const day=dt.getDay()||7;dt.setDate(dt.getDate()-day+1);return dt}
 function dateToStr(d){return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`}
 window.escHtml=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ── GeoSearchUtils (porting da Android — GeoSearchUtils.kt) ──
+// Ricerca luoghi via Nominatim (OpenStreetMap): stessa logica usata su Android
+// per l'autocomplete indirizzi e per la geocodifica inversa del map picker.
+const ITALIAN_CITIES=['roma','rome','milano','milan','napoli','naples','torino','firenze','bologna','venezia','palermo','genova','bari','verona','catania','padova','trieste','brescia','parma','modena'];
+function geoHasCity(text){const low=(text||'').toLowerCase();return ITALIAN_CITIES.some(c=>low.includes(c));}
+function geoBuildQuery(place){return geoHasCity(place)?place:`${place}, Roma`;}
+async function geoFetchSuggestions(query){
+  try{
+    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`;
+    const res=await fetch(url,{headers:{'Accept-Language':'it,en'}});
+    if(!res.ok)return[];
+    const arr=await res.json();
+    return arr.map(o=>({display:o.display_name,lat:parseFloat(o.lat),lon:parseFloat(o.lon)}));
+  }catch(e){console.warn('[Geo] Errore autocomplete:',e);return[];}
+}
+async function geoReverseGeocode(lat,lon){
+  try{
+    const url=`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=0&zoom=18`;
+    const res=await fetch(url,{headers:{'Accept-Language':'it,en'}});
+    if(!res.ok)return null;
+    const obj=await res.json();
+    const dn=obj.display_name;
+    if(!dn)return null;
+    return dn.split(',').slice(0,3).join(',').trim();
+  }catch(e){console.warn('[Geo] Errore reverse geocode:',e);return null;}
+}
+async function geoGeocode(query){
+  try{
+    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+    const res=await fetch(url,{headers:{'Accept-Language':'it,en'}});
+    if(!res.ok)return null;
+    const arr=await res.json();
+    if(arr.length>0)return{lat:parseFloat(arr[0].lat),lon:parseFloat(arr[0].lon)};
+    return null;
+  }catch(e){return null;}
+}
+
+// ── Campo "Luogo" con autocomplete Nominatim + pulsante "Scegli sulla mappa" ──
+// Riusabile sia dal form Evento che dal form Evento rapido.
+let placeSearchTimers={};
+function attachPlaceAutocomplete(inputId,listId){
+  const input=document.getElementById(inputId);
+  if(!input)return;
+  input.addEventListener('input',()=>{
+    const val=input.value;
+    clearTimeout(placeSearchTimers[inputId]);
+    const list=document.getElementById(listId);
+    if(val.trim().length<3){if(list)list.innerHTML='';return;}
+    placeSearchTimers[inputId]=setTimeout(async()=>{
+      const suggestions=await geoFetchSuggestions(geoBuildQuery(val));
+      renderGeoSuggestions(listId,inputId,suggestions);
+    },400);
+  });
+  input.addEventListener('blur',()=>{
+    // Piccolo delay per permettere il click sul suggerimento prima di nascondere la lista
+    setTimeout(()=>{const list=document.getElementById(listId);if(list)list.innerHTML='';},200);
+  });
+}
+function renderGeoSuggestions(listId,inputId,suggestions){
+  const list=document.getElementById(listId);
+  if(!list)return;
+  if(!suggestions.length){list.innerHTML='';return;}
+  list.innerHTML=suggestions.slice(0,4).map(s=>{
+    const shortLabel=s.display.split(',').slice(0,2).join(',').trim();
+    const label=geoHasCity(shortLabel)?shortLabel:`${shortLabel}, Roma`;
+    return`<div class="geo-suggest-item" onclick="pickGeoSuggestion('${inputId}','${listId}',${JSON.stringify(label).replace(/"/g,'&quot;')})">📍 <span>${escHtml(label)}</span></div>`;
+  }).join('');
+}
+window.pickGeoSuggestion=function(inputId,listId,label){
+  const input=document.getElementById(inputId);
+  if(input)input.value=label;
+  const list=document.getElementById(listId);
+  if(list)list.innerHTML='';
+};
+
+// ── Map picker (selettore punto su mappa, pin fisso al centro come su Android) ──
+window.openMapPicker=async function(targetInputId){
+  mapPickerTargetInputId=targetInputId;
+  const overlay=document.getElementById('map-picker-overlay');
+  overlay.classList.add('active');
+  document.getElementById('map-picker-address').textContent='Sposta la mappa per centrare il pin sul punto che ti interessa';
+
+  // Se il campo luogo ha già un testo, prova a centrare lì; altrimenti prova il GPS.
+  const existingPlace=document.getElementById(targetInputId)?.value.trim();
+  let center=DEFAULT_MAP_CENTER,zoom=15;
+  if(existingPlace){
+    const gp=await geoGeocode(geoBuildQuery(existingPlace));
+    if(gp){center=[gp.lat,gp.lon];zoom=16;}
+  }
+
+  if(!mapPickerLeaflet){
+    mapPickerLeaflet=L.map('map-picker-map',{zoomControl:true,attributionControl:true}).setView(center,zoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      maxZoom:19,attribution:'© OpenStreetMap'
+    }).addTo(mapPickerLeaflet);
+    mapPickerLeaflet.on('move',()=>{mapPickerCenter=mapPickerLeaflet.getCenter();});
+    // Pin CSS fisso al centro del contenitore (non un vero marker Leaflet)
+    const pin=document.createElement('div');
+    pin.className='map-picker-pin';pin.textContent='📍';
+    document.getElementById('map-picker-map').appendChild(pin);
+  }else{
+    mapPickerLeaflet.invalidateSize();
+    mapPickerLeaflet.setView(center,zoom);
+  }
+  mapPickerCenter=mapPickerLeaflet.getCenter();
+
+  // Se non c'era già un luogo, prova subito la geolocalizzazione GPS (come su Android)
+  if(!existingPlace)locateMapPicker(true);
+};
+window.closeMapPicker=function(){
+  document.getElementById('map-picker-overlay').classList.remove('active');
+  mapPickerTargetInputId=null;
+};
+window.locateMapPicker=function(silent){
+  if(!navigator.geolocation){
+    if(!silent)showToast('Geolocalizzazione non supportata su questo browser');
+    return;
+  }
+  const mapEl=document.getElementById('map-picker-map');
+  let indicator=document.getElementById('map-picker-locating-ind');
+  if(!indicator){
+    indicator=document.createElement('div');
+    indicator.id='map-picker-locating-ind';indicator.className='map-picker-locating';
+    indicator.textContent='📡 Localizzazione in corso…';
+    mapEl.appendChild(indicator);
+  }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    indicator.remove();
+    const{latitude,longitude}=pos.coords;
+    mapPickerLeaflet.setView([latitude,longitude],17.5);
+  },err=>{
+    indicator.remove();
+    if(!silent)showToast('Permesso posizione negato: sposta la mappa a mano');
+  },{enableHighAccuracy:true,timeout:8000});
+};
+window.confirmMapPicker=async function(){
+  if(!mapPickerCenter||!mapPickerTargetInputId)return;
+  const addrEl=document.getElementById('map-picker-address');
+  addrEl.textContent='Sto cercando l\'indirizzo…';
+  const{lat,lng}=mapPickerCenter;
+  const address=await geoReverseGeocode(lat,lng)||`Punto selezionato (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+  const input=document.getElementById(mapPickerTargetInputId);
+  if(input)input.value=address;
+  closeMapPicker();
+};
 
 // ── Web Push & Notifiche ──────────────────────────────────────────────────────
 //
@@ -723,7 +1027,10 @@ function notifSupported(){
 async function registerSW(){
   if(!('serviceWorker'in navigator))return null;
   try{
-    const reg=await navigator.serviceWorker.register('/Web2/firebase-messaging-sw.js',{scope:'/Web2/'});
+    // Scope dedotto dal percorso corrente della pagina (funziona sia su /web2/ che su /web/,
+    // senza bisogno di modificare questo file quando si passa in produzione).
+    const swScope=location.pathname.endsWith('/')?location.pathname:location.pathname.replace(/[^/]+$/,'');
+    const reg=await navigator.serviceWorker.register(swScope+'firebase-messaging-sw.js',{scope:swScope});
     console.log('[SW] Registrato:',reg.scope);
     return reg;
   }catch(e){console.error('[SW] Errore registrazione:',e);return null;}
@@ -817,8 +1124,8 @@ function listenForegroundMessages(){
     // Sopprimi se l'utente è l'inseritore
     if(data.senderUid&&currentUser&&data.senderUid===currentUser.uid)return;
 
-    const title=data.notifTitle||(type==='event'?'Nuovo evento 🎉':'Nuovo programma 📂');
-    const body=data.notifBody||(type==='event'?'Tocca per vedere i dettagli':'Tocca per vedere i programmi');
+    const title=data.notifTitle||(type==='event'?'Nuovo evento 🎉':type==='program'?'Nuovo programma 📂':'Evento rapido adesso ⚡');
+    const body=data.notifBody||(type==='event'?'Tocca per vedere i dettagli':type==='program'?'Tocca per vedere i programmi':'Tocca per vedere i dettagli');
 
     // Mostra una notifica in-app cliccabile (toast arricchito)
     showInAppNotif(title,body,type,id,data.eventDate||'');
@@ -878,6 +1185,23 @@ function handleNotifNavigation(type,id,eventDate){
       }
     };
     setTimeout(()=>tryHighlight(10),150);
+
+  } else if(type==='quick_event'){
+    // Come "program": vai alla schermata Eventi rapidi + evidenzia la card
+    openQuickEvents();
+    const tryHighlight=(attempts)=>{
+      const card=document.querySelector(`.qe-card[data-qeid="${id}"]`);
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.style.outline='2.5px solid var(--primary)';
+        card.style.outlineOffset='2px';
+        card.style.transition='outline .2s,outline-offset .2s';
+        setTimeout(()=>{card.style.outline='';card.style.outlineOffset='';},2500);
+      } else if(attempts>0){
+        setTimeout(()=>tryHighlight(attempts-1),100);
+      }
+    };
+    setTimeout(()=>tryHighlight(10),150);
   }
 }
 
@@ -907,7 +1231,7 @@ function showInAppNotif(title,body,type,id,eventDate){
     +'padding:13px 14px;display:flex;align-items:center;gap:11px;'
     +'box-shadow:0 4px 24px rgba(124,58,237,.22);z-index:195;cursor:pointer;'
     +'animation:slideUp .3s cubic-bezier(.4,0,.2,1);';
-  el.innerHTML=`<div style="font-size:24px;flex-shrink:0">${type==='event'?'🎉':'📂'}</div>`
+  el.innerHTML=`<div style="font-size:24px;flex-shrink:0">${type==='event'?'🎉':type==='program'?'📂':'⚡'}</div>`
     +`<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text-main)">${escHtml(title)}</div>`
     +`<div style="font-size:11px;color:var(--text-sub);margin-top:1px">${escHtml(body)}</div></div>`
     +`<div style="font-size:16px;color:var(--text-muted);padding:4px">›</div>`;
@@ -950,6 +1274,7 @@ window.showScreen=function(id,push=true){
   document.getElementById('screen-'+id).classList.add('active');
   if(push&&id!=='splash') navHistory.push(id);
   if(id==='settings') renderSettings();
+  if(id==='quick-events') renderQuickEventsScreen();
   updateBarBackBtn();
 };
 window.historyBack=function(){
@@ -1062,8 +1387,34 @@ function startListeners(){
       setTimeout(()=>handleNotifNavigation(p.type,p.id,p.eventDate||''),200);
     }
   });
+  // Eventi rapidi ("Adesso ⚡"): solo quelli di oggi, come su Android.
+  // Chi non è di oggi viene ripulito in modo best-effort (l'app Android fa la stessa pulizia).
+  unsubQuickEvents=onSnapshot(collection(db,'quick_events'),snap=>{
+    const today=todayStr();
+    const all=snap.docs.map(d=>({...d.data(),id:d.id}));
+    allQuickEvents=all.filter(q=>q.date===today).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+    updateQuickEventsFab();
+    if(document.getElementById('screen-quick-events')?.classList.contains('active'))renderQuickEventsScreen();
+    // Pulizia best-effort di eventuali eventi rapidi non di oggi
+    all.filter(q=>q.date!==today).forEach(stale=>{deleteDoc(doc(db,'quick_events',stale.id)).catch(()=>{});});
+    if(window._pendingNotif&&window._pendingNotif.type==='quick_event'){
+      const p=window._pendingNotif;
+      window._pendingNotif=null;
+      setTimeout(()=>handleNotifNavigation(p.type,p.id,p.eventDate||''),200);
+    }
+  });
+  // Tick periodico (ogni 30s) per aggiornare lo stato "Scaduto" delle card senza ricaricare i dati
+  if(qeTickInterval)clearInterval(qeTickInterval);
+  qeTickInterval=setInterval(()=>{
+    if(document.getElementById('screen-quick-events')?.classList.contains('active'))renderQuickEventsScreen();
+  },30000);
 }
-function stopListeners(){[unsubEvents,unsubCats,unsubUsers,unsubPrograms].forEach(u=>{if(u)u();});unsubEvents=unsubCats=unsubUsers=unsubPrograms=null;}
+function stopListeners(){
+  [unsubEvents,unsubCats,unsubUsers,unsubPrograms,unsubQuickEvents].forEach(u=>{if(u)u();});
+  unsubEvents=unsubCats=unsubUsers=unsubPrograms=unsubQuickEvents=null;
+  if(qeTickInterval){clearInterval(qeTickInterval);qeTickInterval=null;}
+  allQuickEvents=[];updateQuickEventsFab();
+}
 
 // ── Filters ──
 function renderFilters(){
@@ -1493,7 +1844,12 @@ window.openEventForm=function(eventId,prefillDate){
       </div>
     </div>
     <div class="form-section"><div class="form-label">Tipo *</div><div class="type-grid">${cats}</div></div>
-    <div class="form-section"><div class="form-label">Luogo</div><input id="f-place" class="form-field" type="text" placeholder="Via, Piazza, Nome locale…" value="${escHtml(existing?.place||'')}"/></div>
+    <div class="form-section place-field-wrap">
+      <div class="form-label">Luogo</div>
+      <input id="f-place" class="form-field" type="text" placeholder="Via, Piazza, Nome locale… (default Roma)" value="${escHtml(existing?.place||'')}" autocomplete="off"/>
+      <div id="f-place-suggest" class="geo-suggest-list"></div>
+      <button type="button" class="place-map-btn" onclick="openMapPicker('f-place')">🗺️ Scegli sulla mappa</button>
+    </div>
     <div class="form-section"><div class="form-label">Descrizione</div><textarea id="f-desc" class="form-field" rows="3" placeholder="Note, link, dettagli…">${escHtml(existing?.description||'')}</textarea></div>
     <div class="form-section">
       <button id="f-partecipa" class="attend-btn ${iAmIn?'attending':'not-attending'}" onclick="toggleFormPartecipa()" style="width:100%;margin:0">
@@ -1501,6 +1857,7 @@ window.openEventForm=function(eventId,prefillDate){
       </button>
     </div>`;
   showScreen('form');
+  attachPlaceAutocomplete('f-place','f-place-suggest');
 };
 window.clearTime=function(){const f=document.getElementById('f-time');if(f)f.value='';};
 window.selectType=function(el){document.querySelectorAll('.type-option').forEach(o=>o.classList.remove('selected'));el.classList.add('selected');};
@@ -1546,6 +1903,159 @@ window.saveEventForm=async function(){
   }catch(e){showToast('Errore: '+e.message);}
 };
 
+// ── Quick Events ("Adesso ⚡") ──
+window.openQuickEvents=function(){
+  showScreen('quick-events');
+  renderQuickEventsScreen();
+};
+
+function isQuickEventExpired(qe){
+  if(!qe.endTime)return false;
+  const now=new Date();
+  const[h,m]=qe.endTime.split(':').map(Number);
+  const end=new Date(now.getFullYear(),now.getMonth(),now.getDate(),h,m);
+  return now>end;
+}
+
+function renderQuickEventsScreen(){
+  const body=document.getElementById('qe-list-body');
+  if(!body)return;
+  if(!allQuickEvents.length){
+    body.innerHTML=`<div class="qe-empty"><div class="qe-empty-icon">⚡</div><div style="font-weight:600;font-size:13px">Nessun evento rapido per oggi</div><div style="font-size:11px;margin-top:4px">Tocca + per dire dove sei adesso</div></div>`;
+    return;
+  }
+  body.innerHTML=allQuickEvents.map(qe=>{
+    const expired=isQuickEventExpired(qe);
+    const isOwner=currentUser&&qe.insertedByUid&&qe.insertedByUid===currentUser.uid;
+    const isParticipant=currentUser&&qe.participants&&Object.prototype.hasOwnProperty.call(qe.participants,currentUser.uid);
+    const typesHtml=(qe.types&&qe.types.length)
+      ?qe.types.map(k=>`<span class="qe-badge" style="background:${catColor(k)}2e;color:${catColor(k)}">${catEmoji(k)} ${escHtml(catLabel(k))}</span>`).join('')
+      :`<span style="font-size:10px;color:var(--text-muted);font-style:italic">Nessuna tipologia</span>`;
+    const participantNames=qe.participants?Object.values(qe.participants):[];
+    return`
+    <div class="qe-card${expired?' expired':''}" data-qeid="${qe.id}">
+      <div class="qe-row1">
+        <div class="qe-title">${escHtml(qe.title||'Evento rapido')}</div>
+        <div class="qe-time${expired?' expired':''}">${escHtml(qe.startTime||'')}–${escHtml(qe.endTime||'')}</div>
+        ${isOwner?`<div class="qe-owner-actions">
+          <button class="icon-btn-sm" onclick="openQuickEventForm('${qe.id}')" title="Modifica">✏️</button>
+          <button class="icon-btn-sm" onclick="confirmDeleteQuickEvent('${qe.id}')" title="Elimina">🗑</button>
+        </div>`:''}
+      </div>
+      <div class="qe-row2">
+        <span>📍</span><span>${escHtml(qe.place||'Luogo non specificato')}</span>
+        <span>·</span><span>👤 ${escHtml(qe.insertedBy||'Utente')}</span>
+        ${expired?`<span class="qe-expired-tag">Scaduto</span>`:''}
+      </div>
+      <div class="qe-types">${typesHtml}</div>
+      <div class="qe-row3">
+        <div class="qe-participants">👥 ${participantNames.length?escHtml(participantNames.join(', ')):'Nessun partecipante ancora'}</div>
+        <button class="qe-join-btn${isParticipant?' joined':''}" onclick="toggleQuickEventJoin('${qe.id}')">
+          ${isParticipant?'➖ Non partecipo':'➕ Partecipo'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Aggiorna il pulsating del bottone ⚡ nella barra viste in base alla presenza di eventi rapidi oggi
+function updateQuickEventsFab(){
+  const wrap=document.getElementById('qe-tab-wrap');
+  const fab=document.getElementById('qe-fab-btn');
+  if(!wrap||!fab)return;
+  const has=allQuickEvents.length>0;
+  wrap.classList.toggle('has-events',has);
+  fab.classList.toggle('has-events',has);
+}
+
+window.toggleQuickEventJoin=async function(id){
+  if(!currentUser){showToast('Accedi per partecipare');return;}
+  const qe=allQuickEvents.find(q=>q.id===id);if(!qe)return;
+  const uid=currentUser.uid,name=currentUser.displayName||currentUser.email||'Utente';
+  const isIn=qe.participants&&Object.prototype.hasOwnProperty.call(qe.participants,uid);
+  try{
+    if(isIn){
+      await updateDoc(doc(db,'quick_events',id),{[`participants.${uid}`]:deleteField()});
+    }else{
+      await updateDoc(doc(db,'quick_events',id),{[`participants.${uid}`]:name});
+    }
+  }catch(e){showToast('Errore: '+e.message);}
+};
+
+window.confirmDeleteQuickEvent=function(id){
+  const qe=allQuickEvents.find(q=>q.id===id);
+  showModal(`<div class="modal-title">Eliminare l'evento rapido?</div><p style="color:var(--text-sub);font-size:14px;margin-bottom:4px">"${escHtml(qe?.place||'')}" verrà rimosso definitivamente.</p><div class="modal-actions"><button class="btn-secondary" onclick="closeModal()">Annulla</button><button class="btn-primary-sm" style="background:#dc2626" onclick="deleteQuickEventNow('${id}')">Elimina</button></div>`);
+};
+window.deleteQuickEventNow=async function(id){
+  closeModal();
+  try{await deleteDoc(doc(db,'quick_events',id));showToast('Evento rapido eliminato');}
+  catch(e){showToast('Errore: '+e.message);}
+};
+
+// ── Quick Event Form ──
+window.openQuickEventForm=function(id){
+  editingQuickEventId=id||null;
+  const existing=id?allQuickEvents.find(q=>q.id===id):null;
+  document.getElementById('qef-title').textContent=existing?'Modifica evento rapido':'Nuovo evento rapido';
+  const now=new Date();
+  const nowHHMM=`${p2(now.getHours())}:${p2(now.getMinutes())}`;
+  const plus2=new Date(now.getTime()+2*60*60*1000);
+  const plus2HHMM=`${p2(plus2.getHours())}:${p2(plus2.getMinutes())}`;
+  const selectedTypes=new Set(existing?.types||[]);
+  const chips=Object.entries(allCategories).map(([key,cat])=>
+    `<div class="type-chip${selectedTypes.has(key)?' selected':''}" data-type="${key}" style="${selectedTypes.has(key)?`border-color:${cat.colorHex};background:${cat.colorHex}22;color:${cat.colorHex}`:''}" onclick="toggleQuickEventType(this,'${cat.colorHex}')">${cat.emoji} ${escHtml(cat.label)}</div>`
+  ).join('');
+  document.getElementById('qef-body').innerHTML=`
+    <div class="form-section"><div class="form-label">Titolo *</div><input id="qef-title-input" class="form-field" type="text" placeholder="Es. Aperitivo al volo" value="${escHtml(existing?.title||'')}" autocomplete="off"/></div>
+    <div class="form-section"><div class="form-label">Orario *</div>
+      <div style="display:flex;gap:8px">
+        <input id="qef-start" class="form-field" type="time" value="${existing?.startTime||nowHHMM}" style="flex:1"/>
+        <input id="qef-end" class="form-field" type="time" value="${existing?.endTime||plus2HHMM}" style="flex:1"/>
+      </div>
+    </div>
+    <div class="form-section"><div class="form-label">Tipologia * (una o più)</div><div class="type-chip-row" id="qef-type-row">${chips}</div></div>
+    <div class="form-section place-field-wrap">
+      <div class="form-label">Luogo *</div>
+      <input id="qef-place" class="form-field" type="text" placeholder="Via, Piazza… (default Roma)" value="${escHtml(existing?.place||'')}" autocomplete="off"/>
+      <div id="qef-place-suggest" class="geo-suggest-list"></div>
+      <button type="button" class="place-map-btn" onclick="openMapPicker('qef-place')">🗺️ Scegli sulla mappa</button>
+    </div>`;
+  showScreen('quick-event-form');
+  attachPlaceAutocomplete('qef-place','qef-place-suggest');
+};
+window.toggleQuickEventType=function(el,colorHex){
+  const sel=el.classList.contains('selected');
+  el.classList.toggle('selected',!sel);
+  el.style.cssText=!sel?`border-color:${colorHex};background:${colorHex}22;color:${colorHex}`:'';
+};
+window.saveQuickEventForm=async function(){
+  const title=document.getElementById('qef-title-input')?.value.trim();
+  const startTime=document.getElementById('qef-start')?.value||'';
+  const endTime=document.getElementById('qef-end')?.value||'';
+  const place=document.getElementById('qef-place')?.value.trim()||'';
+  const types=[...document.querySelectorAll('#qef-type-row .type-chip.selected')].map(el=>el.dataset.type);
+  if(!title){showToast('Il titolo è obbligatorio');return;}
+  if(!place){showToast('Il luogo è obbligatorio');return;}
+  if(!types.length){showToast('Seleziona almeno una tipologia');return;}
+  if(!startTime||!endTime||endTime<=startTime){showToast("L'orario di fine deve essere dopo l'inizio");return;}
+  try{
+    if(editingQuickEventId){
+      await updateDoc(doc(db,'quick_events',editingQuickEventId),{startTime,endTime,title,place,types});
+      showToast('Evento rapido aggiornato');
+    }else{
+      const name=currentUser?.displayName||currentUser?.email||'Utente';
+      await addDoc(collection(db,'quick_events'),{
+        startTime,endTime,title,place,types,
+        date:todayStr(),
+        insertedBy:name,insertedByUid:currentUser.uid,
+        id:'',createdAt:Date.now(),participants:{}
+      });
+      showToast('Evento rapido aggiunto');
+    }
+    historyBack();
+  }catch(e){showToast('Errore: '+e.message);}
+};
+
 // ── Settings ──
 function renderSettings(){
   const body=document.getElementById('settings-body');if(!body)return;
@@ -1553,7 +2063,7 @@ function renderSettings(){
   const catChips=Object.entries(allCategories).map(([key,cat])=>`<div class="cat-badge" style="background:${cat.colorHex}" onclick="openEditCategory('${key}')">${cat.emoji} ${cat.label}</div>`).join('');
   const userRows=allUsers.map(u=>{const isMe=u.uid===user?.uid;return`<div class="user-row"><div class="user-avatar">${(u.displayName||u.name||'?').charAt(0).toUpperCase()}</div><div class="user-info"><div class="user-name">${escHtml(u.displayName||u.name||'Utente')}</div><div class="user-email">${escHtml(u.email||'')}</div></div>${isMe?'<div class="me-badge">tu</div>':''}</div>`;}).join('');
   body.innerHTML=`
-    <div class="settings-section"><div class="settings-section-title">Versione</div><div class="settings-card"><div class="settings-row"><div class="settings-row-info"><div class="settings-row-label" style="font-style:italic;color:var(--text-muted)">v2.0 sarde alla beccaficu</div></div></div></div></div>
+    <div class="settings-section"><div class="settings-section-title">Versione</div><div class="settings-card"><div class="settings-row"><div class="settings-row-info"><div class="settings-row-label" style="font-style:italic;color:var(--text-muted)">v4.0 bonellino</div></div></div></div></div>
     <div class="settings-section"><div class="settings-section-title">Profilo</div><div class="settings-card"><div class="user-row"><div class="user-avatar">${escHtml((user?.displayName||user?.email||'?').charAt(0).toUpperCase())}</div><div class="user-info"><div class="user-name">${escHtml(user?.displayName||'Utente')}</div><div class="user-email">${escHtml(user?.email||'')}</div></div></div></div></div>
     <div class="settings-section"><div class="settings-section-title">Aspetto</div><div class="settings-card"><div class="settings-row"><div class="settings-row-info"><div class="settings-row-label">Tema scuro</div><div class="settings-row-sub">Di default è attivo il tema chiaro</div></div><button class="toggle ${isDark?'on':''}" id="theme-toggle" onclick="toggleTheme()"></button></div></div></div>
     <div class="settings-section"><div class="settings-section-title">Categorie</div><div class="settings-card" style="padding:13px 14px"><div class="cat-list">${catChips}</div><button class="btn-primary" style="margin-top:12px;font-size:13px;padding:10px" onclick="openAddCategory()">+ Nuova categoria</button></div></div>
