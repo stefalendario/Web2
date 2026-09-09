@@ -1,14 +1,17 @@
 /**
  * firebase-messaging-sw.js  — Stefalendario Web Push
  *
- * Deve essere servito dalla ROOT del sito (stesso origin di index.html).
- * Per GitHub Pages: stefalendario.github.io/Web2/firebase-messaging-sw.js
+ * Deve essere servito dalla ROOT del sito (stesso origin/path di index.html),
+ * qualunque essa sia (es. /web2/ in test, /web/ in produzione). Il percorso
+ * NON è hardcoded: viene derivato a runtime da self.registration.scope, che
+ * il browser imposta in base a dove il file è stato registrato in index.html.
+ * => Passando da /web2/ a /web/ in produzione questo file NON va toccato.
  *
  * IMPORTANTE: questo file usa importScripts (non ES modules) perché i
  * Service Worker non supportano ancora "import" nativo in tutti i browser.
  *
  * Payload FCM atteso (data-only, identico all'app Android):
- *   type       = "event" | "program"
+ *   type       = "event" | "program" | "quick_event"
  *   id         = Firestore document id
  *   senderUid  = uid di chi ha creato l'item
  *   notifTitle = titolo formattato da Apps Script
@@ -30,6 +33,18 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Base path dell'app, dedotta dallo scope di registrazione del SW
+// (es. "https://tuosito.github.io/web2/" oppure ".../web/" in produzione).
+function getBase() {
+  return self.registration.scope; // termina sempre con "/"
+}
+
+const TYPE_META = {
+  event:       { title: 'Nuovo evento in Stefalendario 🎉',    body: 'Tocca per vedere i dettagli' },
+  program:     { title: 'Nuovo programma in Stefalendario 📂', body: 'Tocca per vedere i programmi' },
+  quick_event: { title: 'Evento rapido adesso ⚡',              body: 'Tocca per vedere i dettagli' }
+};
+
 // ── Notifiche in background (app web chiusa o in background) ────────────────
 //
 // I messaggi FCM data-only NON vengono mostrati automaticamente dal browser
@@ -49,18 +64,17 @@ messaging.onBackgroundMessage(function(payload) {
     console.warn('[SW] Payload incompleto, ignoro. type=', type, 'id=', id);
     return;
   }
-  if (type !== 'event' && type !== 'program') {
+  const meta = TYPE_META[type];
+  if (!meta) {
     console.warn('[SW] Tipo notifica sconosciuto:', type);
     return;
   }
 
   // Fallback titolo/body se Apps Script non li manda
-  const title = data.notifTitle || (type === 'event'
-    ? 'Nuovo evento in Stefalendario 🎉'
-    : 'Nuovo programma in Stefalendario 📂');
-  const body  = data.notifBody  || (type === 'event'
-    ? 'Tocca per vedere i dettagli'
-    : 'Tocca per vedere i programmi');
+  const title = data.notifTitle || meta.title;
+  const body  = data.notifBody  || meta.body;
+
+  const base = getBase();
 
   // Il dato che usiamo al click per navigare alla schermata giusta
   // (specchio degli extra notif_type / notif_id / notif_date dell'app Android)
@@ -68,8 +82,8 @@ messaging.onBackgroundMessage(function(payload) {
 
   return self.registration.showNotification(title, {
     body,
-    icon:  '/Web2/icon-192.png',   // usa il tuo icon già presente, o aggiungilo
-    badge: '/Web2/icon-96.png',
+    icon:  base + 'icon-192.png',
+    badge: base + 'icon-96.png',
     tag:   `stefalendario-${type}-${id}`,   // evita notifiche duplicate
     renotify: false,
     data: notificationData
@@ -85,27 +99,27 @@ self.addEventListener('notificationclick', function(event) {
   const id        = data.id        || '';
   const eventDate = data.eventDate || '';
 
+  const base = getBase();
+
   // Costruisce la URL di destinazione (parallelo alla navigazione Android)
   let targetUrl;
   if (type === 'event') {
-    // Warm start: apre direttamente il dettaglio evento
-    // (la pagina web gestirà il parametro notifEventId)
-    const base = self.location.origin + '/Web2/';
     targetUrl = eventDate
       ? `${base}?notif_type=event&notif_id=${encodeURIComponent(id)}&notif_date=${encodeURIComponent(eventDate)}`
       : `${base}?notif_type=event&notif_id=${encodeURIComponent(id)}`;
   } else if (type === 'program') {
-    const base = self.location.origin + '/Web2/';
     targetUrl = `${base}?notif_type=program&notif_id=${encodeURIComponent(id)}`;
+  } else if (type === 'quick_event') {
+    targetUrl = `${base}?notif_type=quick_event&notif_id=${encodeURIComponent(id)}`;
   } else {
-    targetUrl = self.location.origin + '/Web2/';
+    targetUrl = base;
   }
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
       // Se la PWA è già aperta, porta in primo piano e passa il messaggio
       for (const client of clientList) {
-        if (client.url.includes('/web') && 'focus' in client) {
+        if (client.url.startsWith(base) && 'focus' in client) {
           client.focus();
           // Invia il payload alla pagina aperta via postMessage
           client.postMessage({
